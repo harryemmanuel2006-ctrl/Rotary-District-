@@ -23,6 +23,29 @@ export interface DistrictInfo {
   accountNumber: string;
   secretariatEmail: string;
   secretariatPhone: string;
+  // Impact Counter Stats
+  impactProjectsCompleted: number;
+  impactPeopleReached: string;
+  impactClubsInvolved: number;
+  impactVolunteers: string;
+  impactCommunitiesServed: number;
+  // Featured configurations
+  countdownEventId?: string;
+  featuredProjectId?: string;
+}
+
+export interface YouthImpactInitiative {
+  id: string;
+  title: string;
+  category: 'health_outreach' | 'medical_checkup' | 'education' | 'youth_leadership' | 'mentorship' | 'community_support';
+  categoryLabel: string;
+  description: string;
+  achievements: string[];
+  beneficiariesCount: string;
+  location: string;
+  imageUrl: string;
+  actionLabel?: string;
+  featured: boolean;
 }
 
 export interface LeadershipMember {
@@ -140,10 +163,14 @@ export interface ImpactStory {
   tag: string;
   category: 'health' | 'youth' | 'environment' | 'relief' | 'literacy';
   description: string;
+  fullStory?: string;
+  projectName?: string; // Project involved
   imageUrl: string;
   videoUrl?: string;
   impactStats: string;
   stateLocation: string;
+  beneficiaryQuote?: string;
+  quoteAuthor?: string;
   featured: boolean;
 }
 

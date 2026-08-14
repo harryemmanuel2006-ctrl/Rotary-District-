@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Bell, Calendar, Check, Download } from 'lucide-react';
+import { Clock, Bell, Calendar, Check, Download, MapPin, Sparkles, ArrowRight, ShieldCheck } from 'lucide-react';
+import { useData } from '../context/DataContext';
+import { DistrictEvent } from '../types';
 
 interface EventCountdownProps {
-  targetDate: string; // YYYY-MM-DD or readable string
-  eventTitle: string;
-  eventLocation?: string;
+  onRegisterClick?: (event: DistrictEvent) => void;
 }
 
-export const EventCountdown: React.FC<EventCountdownProps> = ({
-  targetDate,
-  eventTitle,
-  eventLocation,
-}) => {
+export const EventCountdown: React.FC<EventCountdownProps> = ({ onRegisterClick }) => {
+  const { districtInfo, events } = useData();
+
+  // Find the selected countdown event or default to the next upcoming featured event
+  const countdownEvent =
+    events.find((e) => e.id === districtInfo.countdownEventId) ||
+    events.find((e) => e.isFeatured) ||
+    events[0];
+
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
@@ -20,19 +24,20 @@ export const EventCountdown: React.FC<EventCountdownProps> = ({
     isPast: false,
   });
 
-  const [reminderSet, setReminderSet] = useState(false);
+  const [reminderSaved, setReminderSaved] = useState(false);
+
+  const targetDateStr = countdownEvent?.date || '2026-07-25';
 
   useEffect(() => {
     const calculateTime = () => {
-      // Parse event date
-      let eventTime = new Date(targetDate).getTime();
-      if (isNaN(eventTime)) {
-        // Fallback for custom string formatted like "25th July, 2026"
-        eventTime = new Date('2026-07-25T09:00:00').getTime();
+      let targetTime = new Date(targetDateStr).getTime();
+      if (isNaN(targetTime)) {
+        // Fallback for custom formatted strings
+        targetTime = new Date('2026-07-25T09:00:00').getTime();
       }
 
       const now = new Date().getTime();
-      const difference = eventTime - now;
+      const difference = targetTime - now;
 
       if (difference <= 0) {
         setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, isPast: true });
@@ -50,18 +55,20 @@ export const EventCountdown: React.FC<EventCountdownProps> = ({
     calculateTime();
     const timer = setInterval(calculateTime, 1000);
     return () => clearInterval(timer);
-  }, [targetDate]);
+  }, [targetDateStr]);
+
+  if (!countdownEvent) return null;
 
   const handleDownloadIcs = () => {
     const icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//Rotary International District 9141//Event Calendar//EN
 BEGIN:VEVENT
-SUMMARY:${eventTitle}
-DESCRIPTION:Rotary District 9141 Official Event
-LOCATION:${eventLocation || 'District 9141 Secretariat'}
-DTSTART:20260725T090000Z
-DTEND:20260725T170000Z
+SUMMARY:${countdownEvent.title}
+DESCRIPTION:${countdownEvent.description || 'Rotary District 9141 Official Event'}
+LOCATION:${countdownEvent.location}, ${countdownEvent.city}, ${countdownEvent.state}
+DTSTART:${targetDateStr.replace(/-/g, '')}T090000Z
+DTEND:${targetDateStr.replace(/-/g, '')}T180000Z
 END:VEVENT
 END:VCALENDAR`;
 
@@ -69,73 +76,121 @@ END:VCALENDAR`;
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `${eventTitle.replace(/[^a-zA-Z0-9]/g, '_')}.ics`);
+    link.setAttribute('download', `${countdownEvent.title.replace(/[^a-zA-Z0-9]/g, '_')}.ics`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    setReminderSet(true);
+    setReminderSaved(true);
+    setTimeout(() => setReminderSaved(false), 4000);
   };
 
-  if (timeLeft.isPast) {
-    return (
-      <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-full">
-        <Check className="w-3.5 h-3.5" />
-        <span>Event Live / Recently Concluded</span>
-      </div>
-    );
-  }
-
   return (
-    <div className="bg-zinc-900/90 border border-amber-500/30 rounded-2xl p-4 sm:p-5 text-white shadow-xl">
-      <div className="flex items-center justify-between mb-3 pb-2 border-b border-zinc-800">
-        <div className="flex items-center gap-2 text-xs font-bold text-amber-400">
-          <Clock className="w-4 h-4 text-amber-400 animate-pulse" />
-          <span className="uppercase tracking-wider text-[11px]">Event Countdown Timer</span>
+    <div className="bg-[#0B1E3D]/95 border-2 border-amber-500/40 rounded-3xl p-6 sm:p-8 text-white shadow-2xl relative overflow-hidden backdrop-blur-md">
+      {/* Top Banner & Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-amber-500/20">
+        <div>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider mb-1.5">
+            <Clock className="w-3.5 h-3.5 animate-pulse" />
+            <span>Next Major District Event Countdown</span>
+          </div>
+          <h3 className="text-xl sm:text-2xl font-black text-white leading-snug">
+            {countdownEvent.title}
+          </h3>
         </div>
+
         <button
           onClick={handleDownloadIcs}
-          className="flex items-center gap-1 text-[11px] font-semibold text-zinc-300 hover:text-amber-400 transition-colors"
+          className="flex items-center gap-1.5 text-xs font-bold text-amber-300 bg-[#061329] hover:bg-amber-500 hover:text-slate-950 px-3.5 py-2 rounded-xl border border-amber-500/30 transition-all shrink-0"
         >
-          {reminderSet ? (
-            <span className="text-emerald-400 flex items-center gap-1">
-              <Check className="w-3 h-3" /> Reminder Saved
-            </span>
+          {reminderSaved ? (
+            <>
+              <Check className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Calendar Saved!</span>
+            </>
           ) : (
-            <span className="flex items-center gap-1 bg-amber-500/10 px-2 py-1 rounded border border-amber-500/20">
-              <Bell className="w-3 h-3 text-amber-400" /> Save to Calendar
-            </span>
+            <>
+              <Download className="w-3.5 h-3.5" />
+              <span>Save to Calendar</span>
+            </>
           )}
         </button>
       </div>
 
-      <div className="grid grid-cols-4 gap-2 text-center">
-        <div className="bg-zinc-950/80 border border-amber-500/20 p-2.5 rounded-xl">
-          <span className="block text-xl sm:text-2xl font-black text-amber-400 font-mono">
+      {/* Event Meta: Location and Date */}
+      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-300 mb-6">
+        <div className="flex items-center gap-1.5 bg-[#061329] px-3 py-1.5 rounded-lg border border-slate-700">
+          <Calendar className="w-3.5 h-3.5 text-amber-400" />
+          <span>{countdownEvent.formattedDate || countdownEvent.date}</span>
+        </div>
+        <div className="flex items-center gap-1.5 bg-[#061329] px-3 py-1.5 rounded-lg border border-slate-700">
+          <MapPin className="w-3.5 h-3.5 text-amber-400" />
+          <span>{countdownEvent.location}, {countdownEvent.city}</span>
+        </div>
+        {countdownEvent.category && (
+          <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-lg font-bold">
+            {countdownEvent.category}
+          </span>
+        )}
+      </div>
+
+      {/* 4-Box Digital Countdown Timer */}
+      <div className="grid grid-cols-4 gap-2 sm:gap-4 text-center mb-6">
+        <div className="bg-[#061329] border border-amber-500/30 p-3 sm:p-4 rounded-2xl shadow-inner">
+          <span className="block text-2xl sm:text-4xl font-black text-amber-400 font-mono tracking-tight">
             {String(timeLeft.days).padStart(2, '0')}
           </span>
-          <span className="text-[10px] text-zinc-400 font-semibold uppercase">Days</span>
+          <span className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider mt-1 block">
+            Days
+          </span>
         </div>
 
-        <div className="bg-zinc-950/80 border border-amber-500/20 p-2.5 rounded-xl">
-          <span className="block text-xl sm:text-2xl font-black text-amber-400 font-mono">
+        <div className="bg-[#061329] border border-amber-500/30 p-3 sm:p-4 rounded-2xl shadow-inner">
+          <span className="block text-2xl sm:text-4xl font-black text-amber-400 font-mono tracking-tight">
             {String(timeLeft.hours).padStart(2, '0')}
           </span>
-          <span className="text-[10px] text-zinc-400 font-semibold uppercase">Hours</span>
+          <span className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider mt-1 block">
+            Hours
+          </span>
         </div>
 
-        <div className="bg-zinc-950/80 border border-amber-500/20 p-2.5 rounded-xl">
-          <span className="block text-xl sm:text-2xl font-black text-amber-400 font-mono">
+        <div className="bg-[#061329] border border-amber-500/30 p-3 sm:p-4 rounded-2xl shadow-inner">
+          <span className="block text-2xl sm:text-4xl font-black text-amber-400 font-mono tracking-tight">
             {String(timeLeft.minutes).padStart(2, '0')}
           </span>
-          <span className="text-[10px] text-zinc-400 font-semibold uppercase">Mins</span>
+          <span className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider mt-1 block">
+            Minutes
+          </span>
         </div>
 
-        <div className="bg-zinc-950/80 border border-amber-500/20 p-2.5 rounded-xl">
-          <span className="block text-xl sm:text-2xl font-black text-amber-400 font-mono text-yellow-400">
+        <div className="bg-[#061329] border border-amber-500/30 p-3 sm:p-4 rounded-2xl shadow-inner">
+          <span className="block text-2xl sm:text-4xl font-black text-yellow-300 font-mono tracking-tight animate-pulse">
             {String(timeLeft.seconds).padStart(2, '0')}
           </span>
-          <span className="text-[10px] text-zinc-400 font-semibold uppercase">Secs</span>
+          <span className="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider mt-1 block">
+            Seconds
+          </span>
         </div>
+      </div>
+
+      {/* Action Footer */}
+      <div className="flex flex-col sm:flex-row gap-3 pt-2">
+        {onRegisterClick ? (
+          <button
+            onClick={() => onRegisterClick(countdownEvent)}
+            className="flex-1 py-3 px-5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all"
+          >
+            <span>Register for This Event</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        ) : (
+          <a
+            href="#events"
+            className="flex-1 py-3 px-5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all text-center"
+          >
+            <span>View All District Events & Register</span>
+            <ArrowRight className="w-4 h-4" />
+          </a>
+        )}
       </div>
     </div>
   );

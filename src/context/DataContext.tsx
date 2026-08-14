@@ -20,6 +20,7 @@ import {
   PhotoGalleryItem,
   MembershipInquiry,
   DonationRecord,
+  YouthImpactInitiative,
 } from '../types';
 import {
   initialDistrictInfo,
@@ -29,6 +30,7 @@ import {
   initialEvents,
   initialAnnouncements,
   initialImpactStories,
+  initialYouthInitiatives,
   initialMembershipFees,
   initialApplications,
   initialEventRegistrations,
@@ -43,6 +45,15 @@ import {
 interface DataContextType {
   districtInfo: DistrictInfo;
   updateDistrictInfo: (info: DistrictInfo) => void;
+  setCountdownEventId: (eventId: string) => void;
+  setFeaturedProjectId: (projectId: string) => void;
+  updateImpactCounterStats: (stats: {
+    impactProjectsCompleted?: number;
+    impactPeopleReached?: string;
+    impactClubsInvolved?: number;
+    impactVolunteers?: string;
+    impactCommunitiesServed?: number;
+  }) => void;
   
   leadership: LeadershipMember[];
   addLeadershipMember: (member: Omit<LeadershipMember, 'id'>) => void;
@@ -74,6 +85,11 @@ interface DataContextType {
   addImpactStory: (story: Omit<ImpactStory, 'id'>) => void;
   updateImpactStory: (id: string, story: Partial<ImpactStory>) => void;
   deleteImpactStory: (id: string) => void;
+
+  youthInitiatives: YouthImpactInitiative[];
+  addYouthInitiative: (initiative: Omit<YouthImpactInitiative, 'id'>) => void;
+  updateYouthInitiative: (id: string, initiative: Partial<YouthImpactInitiative>) => void;
+  deleteYouthInitiative: (id: string) => void;
 
   membershipFees: MembershipFee[];
   addMembershipFee: (fee: Omit<MembershipFee, 'id' | 'updatedAt'>) => void;
@@ -141,6 +157,7 @@ const STORAGE_KEYS = {
   GOODWILL: 'd9141_goodwill_v3',
   GALLERY: 'd9141_gallery_v3',
   IMPACT_STORIES: 'd9141_impact_stories_v3',
+  YOUTH_INITIATIVES: 'd9141_youth_initiatives_v3',
   INQUIRIES: 'd9141_inquiries_v3',
   DONATIONS: 'd9141_donations_v3',
 };
@@ -179,6 +196,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [impactStories, setImpactStories] = useState<ImpactStory[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.IMPACT_STORIES);
     return saved ? JSON.parse(saved) : initialImpactStories;
+  });
+
+  const [youthInitiatives, setYouthInitiatives] = useState<YouthImpactInitiative[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.YOUTH_INITIATIVES);
+    return saved ? JSON.parse(saved) : initialYouthInitiatives;
   });
 
   const [membershipFees, setMembershipFees] = useState<MembershipFee[]>(() => {
@@ -243,11 +265,33 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.GOODWILL, JSON.stringify(goodwillMessages)); }, [goodwillMessages]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(gallery)); }, [gallery]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.IMPACT_STORIES, JSON.stringify(impactStories)); }, [impactStories]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.YOUTH_INITIATIVES, JSON.stringify(youthInitiatives)); }, [youthInitiatives]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.INQUIRIES, JSON.stringify(inquiries)); }, [inquiries]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.DONATIONS, JSON.stringify(donations)); }, [donations]);
 
   // Actions
   const updateDistrictInfo = (info: DistrictInfo) => setDistrictInfo(info);
+
+  const setCountdownEventId = (eventId: string) => {
+    setDistrictInfo((prev) => ({ ...prev, countdownEventId: eventId }));
+  };
+
+  const setFeaturedProjectId = (projectId: string) => {
+    setDistrictInfo((prev) => ({ ...prev, featuredProjectId: projectId }));
+  };
+
+  const updateImpactCounterStats = (stats: {
+    impactProjectsCompleted?: number;
+    impactPeopleReached?: string;
+    impactClubsInvolved?: number;
+    impactVolunteers?: string;
+    impactCommunitiesServed?: number;
+  }) => {
+    setDistrictInfo((prev) => ({
+      ...prev,
+      ...stats,
+    }));
+  };
 
   const addLeadershipMember = (member: Omit<LeadershipMember, 'id'>) => {
     setLeadership((prev) => [...prev, { ...member, id: `lead-${Date.now()}` }]);
@@ -320,6 +364,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
   const deleteImpactStory = (id: string) => {
     setImpactStories((prev) => prev.filter((s) => s.id !== id));
+  };
+
+  const addYouthInitiative = (initiative: Omit<YouthImpactInitiative, 'id'>) => {
+    setYouthInitiatives((prev) => [{ ...initiative, id: `youth-${Date.now()}` }, ...prev]);
+  };
+  const updateYouthInitiative = (id: string, initiative: Partial<YouthImpactInitiative>) => {
+    setYouthInitiatives((prev) => prev.map((y) => (y.id === id ? { ...y, ...initiative } : y)));
+  };
+  const deleteYouthInitiative = (id: string) => {
+    setYouthInitiatives((prev) => prev.filter((y) => y.id !== id));
   };
 
   const addMembershipFee = (fee: Omit<MembershipFee, 'id' | 'updatedAt'>) => {
@@ -641,6 +695,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         districtInfo,
         updateDistrictInfo,
+        setCountdownEventId,
+        setFeaturedProjectId,
+        updateImpactCounterStats,
         leadership,
         addLeadershipMember,
         updateLeadershipMember,
@@ -666,6 +723,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addImpactStory,
         updateImpactStory,
         deleteImpactStory,
+        youthInitiatives,
+        addYouthInitiative,
+        updateYouthInitiative,
+        deleteYouthInitiative,
         membershipFees,
         addMembershipFee,
         updateMembershipFee,

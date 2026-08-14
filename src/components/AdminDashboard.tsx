@@ -71,6 +71,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
     addImpactStory,
     updateImpactStory,
     deleteImpactStory,
+    youthInitiatives,
+    addYouthInitiative,
+    updateYouthInitiative,
+    deleteYouthInitiative,
+    setCountdownEventId,
+    setFeaturedProjectId,
+    updateImpactCounterStats,
     gallery,
     addGalleryItem,
     updateGalleryItem,
@@ -83,10 +90,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
   } = useData();
 
   const [activeTab, setActiveTab] = useState<
+    | 'impact_counter'
     | 'announcements'
     | 'events'
     | 'projects'
     | 'impact_stories'
+    | 'youth_impact'
     | 'gallery'
     | 'applications'
     | 'fees'
@@ -97,7 +106,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
     | 'receipts'
     | 'analytics'
     | 'info'
-  >('announcements');
+  >('impact_counter');
 
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('Updates saved successfully!');
@@ -109,10 +118,46 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
     setTimeout(() => setSaveSuccess(false), 2500);
   };
 
-  // Editable District Info state
+  // Editable District Info & Impact Counter state
   const [infoForm, setInfoForm] = useState(districtInfo);
+  const [impactStatsForm, setImpactStatsForm] = useState({
+    impactProjectsCompleted: districtInfo.impactProjectsCompleted ?? 48,
+    impactPeopleReached: districtInfo.impactPeopleReached || '150,000+',
+    impactClubsInvolved: districtInfo.impactClubsInvolved ?? 108,
+    impactVolunteers: districtInfo.impactVolunteers || '3,500+',
+    impactCommunitiesServed: districtInfo.impactCommunitiesServed ?? 240,
+    countdownEventId: districtInfo.countdownEventId || events[0]?.id || '',
+    featuredProjectId: districtInfo.featuredProjectId || projects[0]?.id || '',
+  });
 
-  // New Event Form State
+  // New Youth Impact Initiative Form State
+  const [newYouthInitiative, setNewYouthInitiative] = useState({
+    title: '',
+    category: 'education' as const,
+    categoryLabel: 'Education & Classroom Dignity',
+    description: '',
+    achievementsText: '500 Dual Desks Delivered, 1,200 Pupils Equipped',
+    imageUrl: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=1000&q=80',
+    location: 'Bayelsa, Delta, Edo & Rivers States',
+    beneficiariesCount: '15,000+ Children',
+    actionLabel: 'Sponsor School Desks',
+  });
+
+  // New Impact Story Form State
+  const [newStory, setNewStory] = useState({
+    title: '',
+    subtitle: '',
+    category: 'literacy',
+    tag: 'BRED Literacy Impact',
+    stateLocation: 'Bayelsa State',
+    projectName: 'The BRED Literacy Project',
+    impactStats: '500 Desks Provided • 1,200 Pupils Equipped',
+    description: '',
+    fullStory: '',
+    beneficiaryQuote: '',
+    quoteAuthor: '',
+    imageUrl: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=1000&q=80',
+  });
   const [newEvent, setNewEvent] = useState({
     title: '',
     category: 'Seminar',
@@ -164,18 +209,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
     description: '',
     imageUrl: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=800&q=80',
     author: 'Project Monitoring Committee',
-  });
-
-  // New Impact Story Form State
-  const [newStory, setNewStory] = useState({
-    title: '',
-    subtitle: '',
-    category: 'literacy',
-    tag: 'BRED Literacy Impact',
-    stateLocation: 'Bayelsa State',
-    impactStats: '500 Desks Provided • 1,200 Pupils Equipped',
-    description: '',
-    imageUrl: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=1000&q=80',
   });
 
   // New Photo/Video Gallery Form State
@@ -302,6 +335,46 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
     showToast('Field progress update posted to project!');
   };
 
+  const handleSaveImpactStats = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateImpactCounterStats(impactStatsForm);
+    if (impactStatsForm.countdownEventId) {
+      setCountdownEventId(impactStatsForm.countdownEventId);
+    }
+    if (impactStatsForm.featuredProjectId) {
+      setFeaturedProjectId(impactStatsForm.featuredProjectId);
+    }
+    showToast('Live Impact Counter & Homepage Features Updated!');
+  };
+
+  const handleAddYouthInitiative = (e: React.FormEvent) => {
+    e.preventDefault();
+    const achievements = newYouthInitiative.achievementsText.split(',').map((s) => s.trim()).filter(Boolean);
+    addYouthInitiative({
+      title: newYouthInitiative.title,
+      category: newYouthInitiative.category,
+      categoryLabel: newYouthInitiative.categoryLabel,
+      description: newYouthInitiative.description,
+      achievements: achievements.length > 0 ? achievements : ['Child Empowerment', 'Direct Rotary Support'],
+      imageUrl: newYouthInitiative.imageUrl,
+      location: newYouthInitiative.location,
+      beneficiariesCount: newYouthInitiative.beneficiariesCount,
+      actionLabel: newYouthInitiative.actionLabel,
+    });
+    setNewYouthInitiative({
+      title: '',
+      category: 'education',
+      categoryLabel: 'Education & Classroom Dignity',
+      description: '',
+      achievementsText: '500 Dual Desks Delivered, 1,200 Pupils Equipped',
+      imageUrl: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=1000&q=80',
+      location: 'Bayelsa, Delta, Edo & Rivers States',
+      beneficiariesCount: '15,000+ Children',
+      actionLabel: 'Sponsor School Desks',
+    });
+    showToast('Youth & Children Initiative published to Homepage!');
+  };
+
   const handleAddImpactStory = (e: React.FormEvent) => {
     e.preventDefault();
     addImpactStory({ ...newStory });
@@ -311,11 +384,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
       category: 'literacy',
       tag: 'BRED Literacy Impact',
       stateLocation: 'Bayelsa State',
+      projectName: 'The BRED Literacy Project',
       impactStats: '500 Desks Provided • 1,200 Pupils Equipped',
       description: '',
+      fullStory: '',
+      beneficiaryQuote: '',
+      quoteAuthor: '',
       imageUrl: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=1000&q=80',
     });
-    showToast('Human Impact Story published to Our Impact section!');
+    showToast('Human Impact Story published to Stories of Impact section!');
   };
 
   const handleAddGalleryItem = (e: React.FormEvent) => {
@@ -426,6 +503,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
 
         {/* Tab Selection */}
         <div className="flex items-center gap-1.5 py-3 border-b border-[#162C52] text-xs font-bold overflow-x-auto pb-3 flex-shrink-0 no-scrollbar flex-nowrap">
+          {/* New Core Homepage Feature Tabs */}
+          <button
+            onClick={() => setActiveTab('impact_counter')}
+            className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap shrink-0 min-h-[38px] flex items-center gap-1.5 ${
+              activeTab === 'impact_counter' ? 'bg-amber-500 text-slate-950 shadow font-black' : 'bg-[#061329] text-amber-400 border border-amber-500/30 hover:text-white'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Impact Counter & Homepage Hub</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('youth_impact')}
+            className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap shrink-0 min-h-[38px] flex items-center gap-1.5 ${
+              activeTab === 'youth_impact' ? 'bg-amber-500 text-slate-950 shadow font-black' : 'bg-[#061329] text-slate-300 hover:text-white'
+            }`}
+          >
+            <Activity className="w-3.5 h-3.5" />
+            <span>Children & Youth Initiatives ({youthInitiatives.length})</span>
+          </button>
+
           {/* CMS Content Tabs */}
           <button
             onClick={() => setActiveTab('announcements')}
@@ -460,7 +558,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
               activeTab === 'impact_stories' ? 'bg-amber-500 text-slate-950 shadow font-black' : 'bg-[#061329] text-slate-300 hover:text-white'
             }`}
           >
-            Our Impact Stories ({impactStories.length})
+            Stories of Impact ({impactStories.length})
           </button>
 
           <button
@@ -538,6 +636,333 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
 
         {/* Content Scrollable Body */}
         <div className="py-5 overflow-y-auto flex-1 pr-2 space-y-6">
+
+          {/* TAB: Impact Counter & Homepage Hub CMS */}
+          {activeTab === 'impact_counter' && (
+            <div className="space-y-8 text-xs">
+              
+              {/* Live Statistics Counter Form */}
+              <form onSubmit={handleSaveImpactStats} className="bg-[#061329] p-5 sm:p-6 rounded-2xl border-2 border-amber-500/40 space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#162C52]">
+                  <div>
+                    <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" />
+                      Live Homepage Impact Counter Figures
+                    </h3>
+                    <p className="text-slate-400 text-[11px] mt-0.5">
+                      Update the 5 live verified humanitarian statistics displayed across the District 9141 homepage.
+                    </p>
+                  </div>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-black text-xs hover:from-amber-400 hover:to-yellow-400 shadow-md flex items-center gap-2 self-start sm:self-auto"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>Save All Changes</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-slate-300 mb-1 font-semibold">1. Projects Completed (Number)</label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      value={impactStatsForm.impactProjectsCompleted}
+                      onChange={(e) => setImpactStatsForm({ ...impactStatsForm, impactProjectsCompleted: parseInt(e.target.value) || 0 })}
+                      className="w-full px-3.5 py-2 bg-[#0B1E3D] border border-[#162C52] rounded-xl text-white font-mono focus:border-amber-500"
+                    />
+                    <span className="text-[10px] text-slate-400 mt-1 block">Displays as: {impactStatsForm.impactProjectsCompleted}+</span>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-300 mb-1 font-semibold">2. People Reached (Text/Figure)</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. 150,000+"
+                      value={impactStatsForm.impactPeopleReached}
+                      onChange={(e) => setImpactStatsForm({ ...impactStatsForm, impactPeopleReached: e.target.value })}
+                      className="w-full px-3.5 py-2 bg-[#0B1E3D] border border-[#162C52] rounded-xl text-white font-mono focus:border-amber-500"
+                    />
+                    <span className="text-[10px] text-slate-400 mt-1 block">Direct beneficiaries across 4 states</span>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-300 mb-1 font-semibold">3. Clubs Involved (Number)</label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      value={impactStatsForm.impactClubsInvolved}
+                      onChange={(e) => setImpactStatsForm({ ...impactStatsForm, impactClubsInvolved: parseInt(e.target.value) || 0 })}
+                      className="w-full px-3.5 py-2 bg-[#0B1E3D] border border-[#162C52] rounded-xl text-white font-mono focus:border-amber-500"
+                    />
+                    <span className="text-[10px] text-slate-400 mt-1 block">Rotary Clubs in District 9141</span>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-300 mb-1 font-semibold">4. Active Volunteers (Text/Figure)</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. 3,500+"
+                      value={impactStatsForm.impactVolunteers}
+                      onChange={(e) => setImpactStatsForm({ ...impactStatsForm, impactVolunteers: e.target.value })}
+                      className="w-full px-3.5 py-2 bg-[#0B1E3D] border border-[#162C52] rounded-xl text-white font-mono focus:border-amber-500"
+                    />
+                    <span className="text-[10px] text-slate-400 mt-1 block">Rotarians & Rotaractors serving</span>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-300 mb-1 font-semibold">5. Communities Served (Number)</label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      value={impactStatsForm.impactCommunitiesServed}
+                      onChange={(e) => setImpactStatsForm({ ...impactStatsForm, impactCommunitiesServed: parseInt(e.target.value) || 0 })}
+                      className="w-full px-3.5 py-2 bg-[#0B1E3D] border border-[#162C52] rounded-xl text-white font-mono focus:border-amber-500"
+                    />
+                    <span className="text-[10px] text-slate-400 mt-1 block">Displays as: {impactStatsForm.impactCommunitiesServed}+</span>
+                  </div>
+                </div>
+
+                {/* Homepage Feature Selectors */}
+                <div className="pt-4 border-t border-[#162C52] space-y-4">
+                  <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider">
+                    Homepage Strategic Feature Selections
+                  </h4>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-slate-300 mb-1 font-semibold">
+                        Select Target Event for Homepage Live Countdown *
+                      </label>
+                      <select
+                        value={impactStatsForm.countdownEventId}
+                        onChange={(e) => setImpactStatsForm({ ...impactStatsForm, countdownEventId: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-[#0B1E3D] border border-amber-500/40 rounded-xl text-white font-semibold focus:border-amber-500"
+                      >
+                        {events.map((ev) => (
+                          <option key={ev.id} value={ev.id}>
+                            {ev.title} ({ev.formattedDate || ev.date}) - {ev.location}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="text-[10px] text-slate-400 mt-1 block">
+                        This event will tick down in real-time (Days, Hours, Minutes, Seconds) on the homepage.
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-300 mb-1 font-semibold">
+                        Select Featured Project of the Month *
+                      </label>
+                      <select
+                        value={impactStatsForm.featuredProjectId}
+                        onChange={(e) => setImpactStatsForm({ ...impactStatsForm, featuredProjectId: e.target.value })}
+                        className="w-full px-3.5 py-2.5 bg-[#0B1E3D] border border-amber-500/40 rounded-xl text-white font-semibold focus:border-amber-500"
+                      >
+                        {projects.map((pr) => (
+                          <option key={pr.id} value={pr.id}>
+                            {pr.title} (₦{pr.raisedFund.toLocaleString()} of ₦{pr.targetFund.toLocaleString()})
+                          </option>
+                        ))}
+                      </select>
+                      <span className="text-[10px] text-slate-400 mt-1 block">
+                        Highlighted with high-priority progress bar and direct donate button in the hero spotlight.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex justify-end">
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-black text-xs hover:bg-amber-400 shadow-lg flex items-center gap-2"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Apply Homepage Updates</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* TAB: Children & Youth Initiatives CMS */}
+          {activeTab === 'youth_impact' && (
+            <div className="space-y-8 text-xs">
+              
+              {/* Create New Youth Initiative */}
+              <form onSubmit={handleAddYouthInitiative} className="bg-[#061329] p-5 rounded-2xl border border-amber-500/30 space-y-4">
+                <h3 className="text-sm font-bold text-amber-400 flex items-center gap-2">
+                  <Activity className="w-4 h-4" />
+                  Publish New Children & Youth Impact Initiative
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="sm:col-span-2">
+                    <label className="block text-slate-300 mb-1 font-semibold">Initiative Title *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Free Pediatric Dental & Eye Clinic"
+                      value={newYouthInitiative.title}
+                      onChange={(e) => setNewYouthInitiative({ ...newYouthInitiative, title: e.target.value })}
+                      className="w-full px-3.5 py-2 bg-[#0B1E3D] border border-[#162C52] rounded-xl text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-300 mb-1 font-semibold">Pillar Category</label>
+                    <select
+                      value={newYouthInitiative.category}
+                      onChange={(e) => {
+                        const cat = e.target.value as any;
+                        const labels: Record<string, string> = {
+                          health_outreach: "Children's Health Outreach",
+                          medical_checkup: 'Medical Check-ups & Screenings',
+                          education: 'Education & Classroom Desks',
+                          youth_leadership: 'Youth Leadership & RYLA',
+                          mentorship: 'Career Mentorship & STEM',
+                          community_support: 'Community & Orphanage Support',
+                        };
+                        setNewYouthInitiative({
+                          ...newYouthInitiative,
+                          category: cat,
+                          categoryLabel: labels[cat] || 'Youth Initiative',
+                        });
+                      }}
+                      className="w-full px-3.5 py-2 bg-[#0B1E3D] border border-[#162C52] rounded-xl text-white"
+                    >
+                      <option value="health_outreach">Children's Health Outreach</option>
+                      <option value="medical_checkup">Medical Check-ups</option>
+                      <option value="education">Education (BRED Desks)</option>
+                      <option value="youth_leadership">Youth Leadership & RYLA</option>
+                      <option value="mentorship">Mentorship & STEM</option>
+                      <option value="community_support">Community Support & Orphanages</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-slate-300 mb-1 font-semibold">Location / Scope</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Port Harcourt & Delta Riverine"
+                      value={newYouthInitiative.location}
+                      onChange={(e) => setNewYouthInitiative({ ...newYouthInitiative, location: e.target.value })}
+                      className="w-full px-3.5 py-2 bg-[#0B1E3D] border border-[#162C52] rounded-xl text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-300 mb-1 font-semibold">Beneficiaries Tag</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 5,000+ School Children"
+                      value={newYouthInitiative.beneficiariesCount}
+                      onChange={(e) => setNewYouthInitiative({ ...newYouthInitiative, beneficiariesCount: e.target.value })}
+                      className="w-full px-3.5 py-2 bg-[#0B1E3D] border border-[#162C52] rounded-xl text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-300 mb-1 font-semibold">Action Button Label</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Sponsor Child Health"
+                      value={newYouthInitiative.actionLabel}
+                      onChange={(e) => setNewYouthInitiative({ ...newYouthInitiative, actionLabel: e.target.value })}
+                      className="w-full px-3.5 py-2 bg-[#0B1E3D] border border-[#162C52] rounded-xl text-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 mb-1 font-semibold">Image URL</label>
+                  <input
+                    type="url"
+                    required
+                    value={newYouthInitiative.imageUrl}
+                    onChange={(e) => setNewYouthInitiative({ ...newYouthInitiative, imageUrl: e.target.value })}
+                    className="w-full px-3.5 py-2 bg-[#0B1E3D] border border-[#162C52] rounded-xl text-white font-mono text-[11px]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 mb-1 font-semibold">Initiative Description</label>
+                  <textarea
+                    rows={3}
+                    required
+                    placeholder="Describe the background, objective, and activities for this youth program..."
+                    value={newYouthInitiative.description}
+                    onChange={(e) => setNewYouthInitiative({ ...newYouthInitiative, description: e.target.value })}
+                    className="w-full px-3.5 py-2 bg-[#0B1E3D] border border-[#162C52] rounded-xl text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 mb-1 font-semibold">
+                    Key Milestones / Achievements (Comma-Separated)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 5,000 Dewormed, 1,200 Vision Screenings, Multi-vitamins distributed"
+                    value={newYouthInitiative.achievementsText}
+                    onChange={(e) => setNewYouthInitiative({ ...newYouthInitiative, achievementsText: e.target.value })}
+                    className="w-full px-3.5 py-2 bg-[#0B1E3D] border border-[#162C52] rounded-xl text-white"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-black text-xs hover:bg-amber-400 shadow-md flex items-center gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Publish Youth Initiative</span>
+                </button>
+              </form>
+
+              {/* Existing Youth Initiatives List */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-amber-400">Active Youth Initiatives ({youthInitiatives.length})</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {youthInitiatives.map((item) => (
+                    <div key={item.id} className="p-4 bg-[#061329] border border-[#162C52] rounded-2xl space-y-2 flex justify-between items-start gap-3">
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-white text-sm">{item.title}</span>
+                          <span className="text-[10px] text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded">
+                            {item.categoryLabel}
+                          </span>
+                        </div>
+                        <p className="text-slate-300 text-xs line-clamp-2">{item.description}</p>
+                        <p className="text-slate-400 text-[11px] flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-amber-400" />
+                          <span>{item.location} • {item.beneficiariesCount}</span>
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (window.confirm(`Delete initiative: "${item.title}"?`)) {
+                            deleteYouthInitiative(item.id);
+                            showToast('Youth initiative removed!');
+                          }
+                        }}
+                        className="p-2 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white border border-red-500/20"
+                        title="Delete Initiative"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          )}
 
           {/* TAB 1: Announcements & News CMS */}
           {activeTab === 'announcements' && (
@@ -1174,6 +1599,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
                 </div>
 
                 <div>
+                  <label className="block text-slate-300 mb-1 font-semibold">Associated Project Involved</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. The BRED Literacy Project, PolioPlus Niger Delta"
+                    value={newStory.projectName}
+                    onChange={(e) => setNewStory({ ...newStory, projectName: e.target.value })}
+                    className="w-full px-3.5 py-2 bg-[#0B1E3D] border border-[#162C52] rounded-xl text-white"
+                  />
+                </div>
+
+                <div>
                   <label className="block text-slate-300 mb-1 font-semibold">Photo Image URL</label>
                   <input
                     type="url"
@@ -1184,15 +1620,49 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 mb-1 font-semibold">Full Story Description *</label>
+                  <label className="block text-slate-300 mb-1 font-semibold">Short Summary / Teaser *</label>
                   <textarea
-                    rows={4}
+                    rows={2}
                     required
-                    placeholder="Full human interest testimonial, challenges overcome, and Rotary club involvement..."
+                    placeholder="Short summary for the story card..."
                     value={newStory.description}
                     onChange={(e) => setNewStory({ ...newStory, description: e.target.value })}
                     className="w-full px-3.5 py-2 bg-[#0B1E3D] border border-[#162C52] rounded-xl text-white"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 mb-1 font-semibold">Full Story Article (Extended Read)</label>
+                  <textarea
+                    rows={4}
+                    placeholder="Comprehensive writeup of the project background, challenges, Rotary intervention, and lasting impact..."
+                    value={newStory.fullStory}
+                    onChange={(e) => setNewStory({ ...newStory, fullStory: e.target.value })}
+                    className="w-full px-3.5 py-2 bg-[#0B1E3D] border border-[#162C52] rounded-xl text-white"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-slate-300 mb-1 font-semibold">Beneficiary Direct Quote (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 'Before Rotary brought these desks, my pupils wrote on the floor...'"
+                      value={newStory.beneficiaryQuote}
+                      onChange={(e) => setNewStory({ ...newStory, beneficiaryQuote: e.target.value })}
+                      className="w-full px-3.5 py-2 bg-[#0B1E3D] border border-[#162C52] rounded-xl text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-300 mb-1 font-semibold">Quote Byline / Author (Optional)</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Mrs. Blessing Oghenekaro, Headmistress"
+                      value={newStory.quoteAuthor}
+                      onChange={(e) => setNewStory({ ...newStory, quoteAuthor: e.target.value })}
+                      className="w-full px-3.5 py-2 bg-[#0B1E3D] border border-[#162C52] rounded-xl text-white"
+                    />
+                  </div>
                 </div>
 
                 <button

@@ -221,38 +221,63 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({ openDonateModa
                   </div>
                 </div>
 
-                {/* Footer Funding & Action */}
+                {/* Footer Funding Progress & Action */}
                 <div className="p-6 bg-slate-50 border-t border-slate-200 space-y-3">
-                  <div>
-                    <div className="flex justify-between text-xs font-semibold mb-1">
-                      <span className="text-slate-500">Target Goal:</span>
-                      <span className="text-[#061329] font-bold">{formatNaira(project.targetFund)}</span>
+                  <div className="space-y-2">
+                    {/* Visual Progress Bar with Percentage Badge */}
+                    <div className="flex items-center justify-between text-xs font-bold">
+                      <span className="text-slate-600 flex items-center gap-1">
+                        <Target className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Funding Progress</span>
+                      </span>
+                      <span className="text-[#0B1E3D] font-mono bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded text-[11px] font-bold">
+                        {percentage}% Completed
+                      </span>
                     </div>
-                    <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
+
+                    <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden border border-slate-300/60">
                       <div
-                        className="h-full bg-amber-500 rounded-full"
+                        className="h-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 rounded-full transition-all duration-700"
                         style={{ width: `${percentage}%` }}
                       />
                     </div>
-                    <div className="flex justify-between text-[10px] text-slate-500 mt-1 font-semibold">
-                      <span>{percentage}% Funded</span>
-                      <span>{project.beneficiariesCount.toLocaleString()} Beneficiaries</span>
+
+                    {/* 3 Explicit Metrics: Goal, Raised, Remaining */}
+                    <div className="grid grid-cols-3 gap-1.5 text-center pt-1.5">
+                      <div className="bg-white p-1.5 rounded-lg border border-slate-200">
+                        <span className="text-[9px] uppercase font-bold text-slate-500 block">Goal</span>
+                        <span className="text-[11px] font-black text-slate-800 font-mono block truncate">
+                          {formatNaira(project.targetFund)}
+                        </span>
+                      </div>
+                      <div className="bg-amber-50/70 p-1.5 rounded-lg border border-amber-200">
+                        <span className="text-[9px] uppercase font-bold text-amber-700 block">Raised</span>
+                        <span className="text-[11px] font-black text-amber-800 font-mono block truncate">
+                          {formatNaira(project.raisedFund)}
+                        </span>
+                      </div>
+                      <div className="bg-white p-1.5 rounded-lg border border-slate-200">
+                        <span className="text-[9px] uppercase font-bold text-slate-500 block">Remaining</span>
+                        <span className="text-[11px] font-black text-slate-700 font-mono block truncate">
+                          {formatNaira(Math.max(0, project.targetFund - project.raisedFund))}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 pt-1">
                     <button
                       onClick={() => setSelectedProject(project)}
-                      className="flex-1 py-2.5 rounded-xl bg-white border border-slate-300 text-[#061329] hover:bg-slate-100 font-bold text-xs transition-all shadow-sm"
+                      className="flex-1 py-2.5 rounded-xl bg-white border border-slate-300 text-[#061329] hover:bg-slate-100 font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-1"
                     >
-                      Field Updates
+                      <span>Field Updates</span>
                     </button>
                     <button
                       onClick={() => openDonateModal(project.title)}
-                      className="px-4 py-2.5 rounded-xl bg-[#0B1E3D] text-amber-300 border border-amber-500/40 hover:bg-amber-500 hover:text-slate-950 font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow"
+                      className="flex-1 py-2.5 rounded-xl bg-[#0B1E3D] text-amber-400 hover:bg-amber-500 hover:text-slate-950 font-black text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 shadow-md hover:shadow-amber-500/20"
                     >
                       <Heart className="w-3.5 h-3.5 fill-current" />
-                      <span>Donate</span>
+                      <span>Donate Now</span>
                     </button>
                   </div>
                 </div>
