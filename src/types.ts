@@ -309,6 +309,34 @@ export interface GoodwillMessage {
   isFeatured: boolean;
 }
 
+export type MediaDestination =
+  | 'homepage'
+  | 'news'
+  | 'events'
+  | 'projects'
+  | 'youth'
+  | 'stories'
+  | 'gallery'
+  | 'leadership'
+  | 'announcements';
+
+export interface MediaAsset {
+  id: string;
+  title: string;
+  caption?: string;
+  mediaType: 'image' | 'video';
+  url: string; // Base64 dataURL, object URL or remote URL
+  thumbnailUrl?: string;
+  fileSize?: string;
+  originalFileName?: string;
+  uploadedAt: string;
+  category: 'Humanitarian' | 'Education' | 'Health' | 'Events' | 'Leadership' | 'Youth' | 'Installation' | 'General';
+  destinations: MediaDestination[];
+  dimensions?: { width: number; height: number };
+  associatedEntityId?: string;
+  isOptimized?: boolean;
+}
+
 export interface PhotoGalleryItem {
   id: string;
   title: string;

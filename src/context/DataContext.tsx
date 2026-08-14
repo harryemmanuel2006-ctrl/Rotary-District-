@@ -21,6 +21,8 @@ import {
   MembershipInquiry,
   DonationRecord,
   YouthImpactInitiative,
+  MediaAsset,
+  MediaDestination,
 } from '../types';
 import {
   initialDistrictInfo,
@@ -40,6 +42,7 @@ import {
   initialGallery,
   initialInquiries,
   initialDonations,
+  initialMediaAssets,
 } from '../data/initialData';
 
 interface DataContextType {
@@ -126,6 +129,17 @@ interface DataContextType {
   addGalleryItem: (item: Omit<PhotoGalleryItem, 'id'>) => void;
   updateGalleryItem: (id: string, item: Partial<PhotoGalleryItem>) => void;
   deleteGalleryItem: (id: string) => void;
+
+  mediaAssets: MediaAsset[];
+  addMediaAsset: (asset: Omit<MediaAsset, 'id' | 'uploadedAt'>) => MediaAsset;
+  updateMediaAsset: (id: string, asset: Partial<MediaAsset>) => void;
+  deleteMediaAsset: (id: string) => void;
+  publishMediaToDestination: (
+    mediaId: string,
+    destination: MediaDestination,
+    targetEntityId?: string,
+    titleOrCaption?: string
+  ) => { success: boolean; message: string };
   
   inquiries: MembershipInquiry[];
   addInquiry: (inquiry: Omit<MembershipInquiry, 'id' | 'submittedAt' | 'status'>) => void;
@@ -156,6 +170,7 @@ const STORAGE_KEYS = {
   RECEIPTS: 'd9141_receipts_v3',
   GOODWILL: 'd9141_goodwill_v3',
   GALLERY: 'd9141_gallery_v3',
+  MEDIA: 'd9141_media_assets_v3',
   IMPACT_STORIES: 'd9141_impact_stories_v3',
   YOUTH_INITIATIVES: 'd9141_youth_initiatives_v3',
   INQUIRIES: 'd9141_inquiries_v3',
@@ -238,6 +253,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return saved ? JSON.parse(saved) : initialGallery;
   });
 
+  const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>(() => {
+    const saved = localStorage.getItem(STORAGE_KEYS.MEDIA);
+    return saved ? JSON.parse(saved) : initialMediaAssets;
+  });
+
   const [inquiries, setInquiries] = useState<MembershipInquiry[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEYS.INQUIRIES);
     return saved ? JSON.parse(saved) : initialInquiries;
@@ -264,6 +284,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.RECEIPTS, JSON.stringify(digitalReceipts)); }, [digitalReceipts]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.GOODWILL, JSON.stringify(goodwillMessages)); }, [goodwillMessages]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(gallery)); }, [gallery]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.MEDIA, JSON.stringify(mediaAssets)); }, [mediaAssets]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.IMPACT_STORIES, JSON.stringify(impactStories)); }, [impactStories]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.YOUTH_INITIATIVES, JSON.stringify(youthInitiatives)); }, [youthInitiatives]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.INQUIRIES, JSON.stringify(inquiries)); }, [inquiries]);
@@ -598,6 +619,165 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setGallery((prev) => prev.filter((g) => g.id !== id));
   };
 
+  const addMediaAsset = (asset: Omit<MediaAsset, 'id' | 'uploadedAt'>): MediaAsset => {
+    const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
+    const newAsset: MediaAsset = {
+      ...asset,
+      id: `media-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      uploadedAt: nowStr,
+    };
+    setMediaAssets((prev) => [newAsset, ...prev]);
+
+    // Automatically sync destinations if selected
+    if (newAsset.destinations.includes('gallery')) {
+      addGalleryItem({
+        title: newAsset.title,
+        caption: newAsset.caption || newAsset.title,
+        imageUrl: newAsset.url,
+        videoUrl: newAsset.mediaType === 'video' ? newAsset.url : undefined,
+        mediaType: newAsset.mediaType,
+        category: (newAsset.category === 'Youth' ? 'Rotaract & Youth' : newAsset.category === 'Leadership' ? 'Leadership' : newAsset.category === 'Health' || newAsset.category === 'Education' ? 'Projects' : 'Community Outreach'),
+        date: 'August 2026',
+      });
+    }
+
+    return newAsset;
+  };
+
+  const updateMediaAsset = (id: string, asset: Partial<MediaAsset>) => {
+    setMediaAssets((prev) => prev.map((m) => (m.id === id ? { ...m, ...asset } : m)));
+  };
+
+  const deleteMediaAsset = (id: string) => {
+    setMediaAssets((prev) => prev.filter((m) => m.id !== id));
+  };
+
+  const publishMediaToDestination = (
+    mediaId: string,
+    destination: MediaDestination,
+    targetEntityId?: string,
+    titleOrCaption?: string
+  ): { success: boolean; message: string } => {
+    const asset = mediaAssets.find((m) => m.id === mediaId);
+    if (!asset) {
+      return { success: false, message: 'Media item not found' };
+    }
+
+    // Add destination to asset if not present
+    if (!asset.destinations.includes(destination)) {
+      updateMediaAsset(mediaId, { destinations: [...asset.destinations, destination] });
+    }
+
+    switch (destination) {
+      case 'homepage':
+        // Update Governor image or general district welcome
+        if (targetEntityId === 'governor' || !targetEntityId) {
+          setDistrictInfo((prev) => ({ ...prev, governorImage: asset.url }));
+          return { success: true, message: 'Successfully published as District Governor Official Image!' };
+        }
+        return { success: true, message: 'Published to Homepage highlights!' };
+
+      case 'gallery':
+        addGalleryItem({
+          title: titleOrCaption || asset.title,
+          caption: asset.caption || asset.title,
+          imageUrl: asset.url,
+          videoUrl: asset.mediaType === 'video' ? asset.url : undefined,
+          mediaType: asset.mediaType,
+          category: asset.category === 'Youth' ? 'Rotaract & Youth' : asset.category === 'Leadership' ? 'Leadership' : 'Projects',
+          date: 'August 2026',
+        });
+        return { success: true, message: 'Successfully added to District Photo & Video Gallery!' };
+
+      case 'projects':
+        if (targetEntityId) {
+          setProjects((prev) =>
+            prev.map((p) => (p.id === targetEntityId ? { ...p, image: asset.url } : p))
+          );
+          return { success: true, message: 'Successfully updated Project featured photo!' };
+        } else if (projects.length > 0) {
+          setProjects((prev) => [
+            { ...prev[0], image: asset.url },
+            ...prev.slice(1),
+          ]);
+          return { success: true, message: `Successfully attached to ${projects[0].title}!` };
+        }
+        break;
+
+      case 'events':
+        if (targetEntityId) {
+          setEvents((prev) =>
+            prev.map((e) => (e.id === targetEntityId ? { ...e, image: asset.url } : e))
+          );
+          return { success: true, message: 'Successfully updated Event featured banner!' };
+        } else if (events.length > 0) {
+          setEvents((prev) => [
+            { ...prev[0], image: asset.url },
+            ...prev.slice(1),
+          ]);
+          return { success: true, message: `Successfully attached to ${events[0].title}!` };
+        }
+        break;
+
+      case 'news':
+      case 'announcements':
+        if (targetEntityId) {
+          setAnnouncements((prev) =>
+            prev.map((a) => (a.id === targetEntityId ? { ...a, image: asset.url } : a))
+          );
+          return { success: true, message: 'Successfully updated News & Bulletin photo!' };
+        } else if (announcements.length > 0) {
+          setAnnouncements((prev) => [
+            { ...prev[0], image: asset.url },
+            ...prev.slice(1),
+          ]);
+          return { success: true, message: `Successfully attached to ${announcements[0].title}!` };
+        }
+        break;
+
+      case 'youth':
+        if (targetEntityId) {
+          setYouthInitiatives((prev) =>
+            prev.map((y) => (y.id === targetEntityId ? { ...y, imageUrl: asset.url } : y))
+          );
+          return { success: true, message: 'Successfully updated Children & Youth Initiative photo!' };
+        } else if (youthInitiatives.length > 0) {
+          setYouthInitiatives((prev) => [
+            { ...prev[0], imageUrl: asset.url },
+            ...prev.slice(1),
+          ]);
+          return { success: true, message: `Successfully attached to ${youthInitiatives[0].title}!` };
+        }
+        break;
+
+      case 'stories':
+        if (targetEntityId) {
+          setImpactStories((prev) =>
+            prev.map((s) => (s.id === targetEntityId ? { ...s, imageUrl: asset.url } : s))
+          );
+          return { success: true, message: 'Successfully updated Story of Impact photo!' };
+        } else if (impactStories.length > 0) {
+          setImpactStories((prev) => [
+            { ...prev[0], imageUrl: asset.url },
+            ...prev.slice(1),
+          ]);
+          return { success: true, message: `Successfully attached to ${impactStories[0].title}!` };
+        }
+        break;
+
+      case 'leadership':
+        if (targetEntityId) {
+          setLeadership((prev) =>
+            prev.map((l) => (l.id === targetEntityId ? { ...l, image: asset.url } : l))
+          );
+          return { success: true, message: 'Successfully updated Leader profile picture!' };
+        }
+        break;
+    }
+
+    return { success: true, message: `Media published to ${destination} successfully!` };
+  };
+
   const addInquiry = (inquiry: Omit<MembershipInquiry, 'id' | 'submittedAt' | 'status'>) => {
     const now = new Date();
     const formatted = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -626,6 +806,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setEvents(initialEvents);
     setAnnouncements(initialAnnouncements);
     setImpactStories(initialImpactStories);
+    setYouthInitiatives(initialYouthInitiatives);
     setMembershipFees(initialMembershipFees);
     setApplications(initialApplications);
     setEventRegistrations(initialEventRegistrations);
@@ -633,6 +814,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setDigitalReceipts(initialDigitalReceipts);
     setGoodwillMessages(initialGoodwillMessages);
     setGallery(initialGallery);
+    setMediaAssets(initialMediaAssets);
     setInquiries(initialInquiries);
     setDonations(initialDonations);
     localStorage.clear();
@@ -750,6 +932,11 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addGalleryItem,
         updateGalleryItem,
         deleteGalleryItem,
+        mediaAssets,
+        addMediaAsset,
+        updateMediaAsset,
+        deleteMediaAsset,
+        publishMediaToDestination,
         inquiries,
         addInquiry,
         updateInquiryStatus,

@@ -35,6 +35,7 @@ import {
 import { useData } from '../context/DataContext';
 import { MembershipStatus, DigitalReceipt, DistrictProject, ImpactStory, PhotoGalleryItem, DistrictAnnouncement, DistrictEvent } from '../types';
 import { DigitalReceiptModal } from './DigitalReceiptModal';
+import { MediaLibraryManager } from './MediaLibraryManager';
 
 interface AdminDashboardProps {
   isOpen: boolean;
@@ -82,6 +83,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
     addGalleryItem,
     updateGalleryItem,
     deleteGalleryItem,
+    mediaAssets,
     projectDonations,
     digitalReceipts,
     clubs,
@@ -90,6 +92,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
   } = useData();
 
   const [activeTab, setActiveTab] = useState<
+    | 'media_library'
     | 'impact_counter'
     | 'announcements'
     | 'events'
@@ -106,7 +109,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
     | 'receipts'
     | 'analytics'
     | 'info'
-  >('impact_counter');
+  >('media_library');
 
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [successMessage, setSuccessMessage] = useState('Updates saved successfully!');
@@ -503,6 +506,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
 
         {/* Tab Selection */}
         <div className="flex items-center gap-1.5 py-3 border-b border-[#162C52] text-xs font-bold overflow-x-auto pb-3 flex-shrink-0 no-scrollbar flex-nowrap">
+          {/* UPLOAD MEDIA & ASSET LIBRARY TAB - MOST PROMINENT */}
+          <button
+            onClick={() => setActiveTab('media_library')}
+            className={`px-4 py-2.5 rounded-xl transition-all whitespace-nowrap shrink-0 min-h-[40px] flex items-center gap-2 border-2 ${
+              activeTab === 'media_library'
+                ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 border-amber-300 shadow-lg font-black'
+                : 'bg-gradient-to-r from-[#0B1E3D] to-[#0A224A] text-amber-400 border-amber-500/50 hover:border-amber-400 hover:text-white shadow-md'
+            }`}
+          >
+            <Camera className="w-4 h-4 text-amber-400" />
+            <span>📸 UPLOAD MEDIA & ASSET HUB ({mediaAssets?.length || 0})</span>
+          </button>
+
           {/* New Core Homepage Feature Tabs */}
           <button
             onClick={() => setActiveTab('impact_counter')}
@@ -636,6 +652,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ isOpen, onClose 
 
         {/* Content Scrollable Body */}
         <div className="py-5 overflow-y-auto flex-1 pr-2 space-y-6">
+
+          {/* TAB: Dedicated Upload Media & Asset Hub */}
+          {activeTab === 'media_library' && (
+            <MediaLibraryManager onNotify={showToast} initialUploadOpen={false} />
+          )}
 
           {/* TAB: Impact Counter & Homepage Hub CMS */}
           {activeTab === 'impact_counter' && (
