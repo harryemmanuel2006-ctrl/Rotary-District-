@@ -1,0 +1,6 @@
+{
+  "name": "Rotary International District 9141",
+  "description": "Official website and digital management platform for Rotary International District 9141 (2026-2027), featuring District Governor Chibueze Anthony Olikagu, leadership profiles, clubs directory, projects, events calendar, goodwill messages, and admin management dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
